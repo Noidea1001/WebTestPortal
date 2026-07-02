@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebTestPortal</title>
+  <script src="/js/api.js"></script>
+</head>
+
+<body>
+  <script>
+    (async function () {
+      try {
+        const me = await Api.get("/api/auth/me");
+        window.location.href = me.role === "Admin" ? "/admin/dashboard.html" : "/student/dashboard.html";
+      } catch {
+        window.location.href = "/login.html";
+      }
+    })();
+  </script>
+</body>
+</html>

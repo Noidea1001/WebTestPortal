@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Take Test - WebTestPortal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/site.css">
+  <style>
+    /* ─── Exam Topbar ─────────────────────────────────────────── */
+    .exam-topbar {
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(255,255,255,0.97);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      box-shadow: 0 1px 0 var(--border), 0 4px 16px rgba(0,0,0,0.04);
+    }
+    .exam-topbar-left  { display:flex; align-items:center; gap:.85rem; min-width:0; }
+    .exam-topbar-right { display:flex; align-items:center; gap:.65rem; flex-shrink:0; }
+    .exam-exit-btn {
+      display:inline-flex; align-items:center; gap:.4rem; flex-shrink:0;
+      padding:.4rem .8rem; border-radius:8px; border:1.5px solid var(--border);
+      background:var(--white); color:var(--slate-600); font-size:.8rem; font-weight:700;
+      cursor:pointer; transition:all .15s ease;
+    }
+    .exam-exit-btn:hover { border-color:#fda4af; color:#e11d48; background:#fff1f2; }
+    .exam-logo-badge {
+      width:36px; height:36px; border-radius:10px; flex-shrink:0;
+      background: linear-gradient(135deg,var(--brand-500),var(--brand-700));
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:1.05rem; box-shadow: var(--shadow-brand);
+    }
+    .exam-main-title {
+      font-size:.9rem; font-weight:700; color:var(--slate-900);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px;
+    }
+    .exam-attempt-info { font-size:.72rem; color:var(--slate-400); font-weight:500; }
+
+    /* ─── Timer ───────────────────────────────────────────────── */
+    .exam-timer {
+      display:flex; align-items:center; gap:.6rem;
+      padding:.35rem .85rem .35rem .4rem; border-radius:10px;
+      background:var(--slate-50); border:1.5px solid var(--border); color:var(--slate-700);
+      transition: background .3s, border-color .3s, color .3s;
+    }
+    .exam-timer-icon {
+      width:30px; height:30px; border-radius:8px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:.95rem;
+      background:var(--white); color:var(--slate-500);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+      transition: background .3s, color .3s;
+    }
+    .exam-timer-info { display:flex; flex-direction:column; line-height:1.15; }
+    .exam-timer-label {
+      font-size:.62rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+      color:var(--slate-400);
+    }
+    .exam-timer-value {
+      font-size:1.05rem; font-weight:800; letter-spacing:.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .exam-timer.warning  { background:#fff7ed; border-color:#fed7aa; color:#c2410c; }
+    .exam-timer.warning .exam-timer-icon { background:#ffedd5; color:#c2410c; }
+    .exam-timer.warning .exam-timer-label { color:#c2410c; opacity:.75; }
+    .exam-timer.danger   { background:#fff1f2; border-color:#fca5a5; color:#dc2626; animation: tPulse 1s ease-in-out infinite; }
+    .exam-timer.danger .exam-timer-icon { background:#fee2e2; color:#dc2626; }
+    .exam-timer.danger .exam-timer-label { color:#dc2626; opacity:.75; }
+    @keyframes tPulse { 0%,100% { box-shadow:0 0 0 0 rgba(220,38,38,0); } 50% { box-shadow:0 0 0 5px rgba(220,38,38,.15); } }
+
+    /* ─── Autosave badge ──────────────────────────────────────── */
+    .exam-save-badge {
+      display:inline-flex; align-items:center; gap:.35rem;
+      font-size:.72rem; font-weight:600; padding:.28rem .65rem;
+      border-radius:20px; background:var(--slate-50); border:1px solid var(--border); color:var(--slate-500);
+      transition: all .2s ease;
+    }
+    .exam-save-badge.saving   { background:#eff6ff; border-color:#bfdbfe; color:#2563eb; }
+    .exam-save-badge.saved    { background:var(--emerald-50); border-color:#a7f3d0; color:var(--emerald-700); }
+    .exam-save-badge.restored { background:var(--emerald-50); border-color:#a7f3d0; color:var(--emerald-700); }
+    .exam-save-badge.error    { background:var(--rose-50); border-color:#fca5a5; color:var(--rose-700); }
+
+    /* ─── Layout ──────────────────────────────────────────────── */
+    .exam-layout {
+      display:grid; grid-template-columns:3fr 1fr; gap:1.5rem;
+      padding:1.5rem 1.5rem 5rem; max-width:1440px; margin:0 auto; align-items:start;
+    }
+    @media (max-width:991px) {
+      .exam-layout { grid-template-columns:1fr; }
+      .exam-sidebar-col { order:-1; position:static !important; }
+    }
+    @media (max-width:767px) { .exam-layout { padding:1rem 1rem 4rem; gap:1rem; } }
+
+    /* ─── Sidebar panel ───────────────────────────────────────── */
+    .exam-sidebar-col { position:sticky; top:68px; }
+    .exam-panel {
+      background:var(--white); border:1px solid var(--border);
+      border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); overflow:hidden;
+    }
+    .exam-panel-section { padding:.9rem 1rem; border-bottom:1px solid var(--border); }
+    .exam-panel-section:last-child { border-bottom:none; }
+    .eps-label {
+      font-size:.65rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.07em; color:var(--slate-400); margin-bottom:.6rem;
+    }
+
+    /* Progress bar */
+    .exam-prog-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:.4rem; }
+    .exam-prog-row span { font-size:.78rem; font-weight:600; color:var(--slate-600); }
+    .exam-prog-bar { height:7px; background:var(--slate-100); border-radius:4px; overflow:hidden; }
+    .exam-prog-fill {
+      height:100%; border-radius:4px;
+      background: linear-gradient(90deg,var(--emerald-500),#34d399);
+      transition: width .4s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* Stats row in sidebar */
+    .exam-stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:.4rem; margin-top:.65rem; }
+    .exam-stat-chip {
+      text-align:center; padding:.4rem .3rem; border-radius:var(--radius);
+      border:1px solid var(--border); background:var(--slate-50);
+    }
+    .exam-stat-chip .chip-val { font-size:1rem; font-weight:800; line-height:1; }
+    .exam-stat-chip .chip-lbl { font-size:.62rem; font-weight:600; color:var(--slate-400); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+    .chip-answered { color:var(--emerald-600); }
+    .chip-flagged  { color:#d97706; }
+    .chip-left     { color:var(--slate-500); }
+
+    /* Navigator grid */
+    .exam-nav-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:.35rem; }
+    @media (max-width:991px) { .exam-nav-grid { grid-template-columns:repeat(10,1fr); } }
+    @media (max-width:575px) { .exam-nav-grid { grid-template-columns:repeat(8,1fr); } }
+
+    .nav-btn {
+      aspect-ratio:1; border-radius:7px; border:2px solid var(--border);
+      background:var(--white); font-size:.75rem; font-weight:700; color:var(--slate-600);
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      position:relative; transition:all .15s ease; padding:0; line-height:1;
+    }
+    .nav-btn:hover { transform:scale(1.12); z-index:1; border-color:var(--brand-300); }
+    .nav-btn.answered  { background:var(--emerald-500); border-color:var(--emerald-600); color:#fff; }
+    .nav-btn.flagged:not(.answered) { background:#f59e0b; border-color:#d97706; color:#fff; }
+    .nav-btn.flagged.answered { background:#8b5cf6; border-color:#7c3aed; color:#fff; }
+    .nav-btn.active { box-shadow:0 0 0 3px rgba(37,99,235,.3); border-color:#2563eb; font-weight:800; }
+    .nav-flag-dot { position:absolute; top:2px; right:2px; width:5px; height:5px; border-radius:50%; background:#fff; display:none; }
+    .nav-btn.flagged .nav-flag-dot { display:block; }
+
+    /* Legend */
+    .nav-legend { display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.65rem; }
+    .nav-legend-item { display:flex; align-items:center; gap:.3rem; font-size:.7rem; color:var(--slate-500); font-weight:500; }
+    .nld { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+    .nld.answered  { background:var(--emerald-500); }
+    .nld.unanswered{ background:var(--white); border:2px solid var(--border); }
+    .nld.flagged   { background:#f59e0b; }
+    .nld.active    { background:#fff; border:2px solid #2563eb; box-shadow:0 0 0 2px rgba(37,99,235,.2); }
+
+    /* Submit button */
+    .btn-exam-submit {
+      width:100%; padding:.85rem 1rem; border:none; border-radius:var(--radius); cursor:pointer;
+      background: linear-gradient(135deg,var(--brand-500),var(--brand-700));
+      color:#fff; font-weight:700; font-size:.92rem;
+      display:flex; align-items:center; justify-content:center; gap:.5rem;
+      box-shadow:var(--shadow-brand); transition:all .2s ease;
+    }
+    .btn-exam-submit:hover { transform:translateY(-1px); box-shadow:var(--shadow-brand-lg); }
+    .btn-exam-submit:active { transform:none; }
+
+    /* ─── Question cards ──────────────────────────────────────── */
+    .exam-q-card {
+      background:var(--white); border:1.5px solid var(--border);
+      border-radius:var(--radius-lg); box-shadow:var(--shadow-sm);
+      overflow:hidden; transition:box-shadow .2s ease, border-color .2s ease;
+      scroll-margin-top:76px;
+    }
+    .exam-q-card:hover { box-shadow:var(--shadow-md); }
+    .exam-q-card.is-active { border-color:var(--brand-300); box-shadow:0 0 0 4px rgba(99,102,241,.1), var(--shadow-md); }
+    .exam-q-card.flagged { border-left:4px solid #f59e0b; background:linear-gradient(180deg,#fffdf0,#fff); }
+    .exam-q-card.answered-card { border-left:4px solid var(--emerald-400); }
+
+    .eqc-header {
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.5rem;
+      padding:1.1rem 1.4rem; background:var(--slate-50); border-bottom:1px solid var(--border);
+    }
+    .eqc-body { padding:1.75rem 1.75rem 1.4rem; }
+    .eqc-question-text { font-size:1.08rem; font-weight:600; color:var(--slate-800); line-height:1.65; margin-bottom:1.3rem; }
+
+    /* ─── Answer options ──────────────────────────────────────── */
+    .eqc-options { display:flex; flex-direction:column; gap:.5rem; }
+
+    .exam-opt {
+      position:relative; cursor:pointer;
+      display:flex; align-items:flex-start; gap:.85rem;
+      padding:1rem 1.15rem; border-radius:var(--radius);
+      border:2px solid var(--border); background:var(--white);
+      transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+      user-select:none;
+    }
+    .exam-opt:hover { border-color:var(--brand-300); background:#fafbff; }
+    .exam-opt.is-selected {
+      border-color:var(--brand-500); background:linear-gradient(90deg,#eef2ff,#f8f9ff);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+    }
+    /* Keep the real input for a11y but visually hidden */
+    .exam-opt input[type="radio"],
+    .exam-opt input[type="checkbox"] { position:absolute; opacity:0; width:0; height:0; }
+
+    /* Custom indicator circle / checkbox */
+    .opt-indicator {
+      width:20px; height:20px; flex-shrink:0; margin-top:1px;
+      border:2px solid var(--slate-300); border-radius:50%;
+      background:var(--white); display:flex; align-items:center; justify-content:center;
+      transition: all .15s ease;
+    }
+    .exam-opt.is-checkbox .opt-indicator { border-radius:5px; }
+    .exam-opt.is-selected .opt-indicator {
+      border-color:var(--brand-500); background:var(--brand-500);
+    }
+    .opt-indicator::after { content:""; display:none; }
+    /* Radio dot */
+    .exam-opt:not(.is-checkbox).is-selected .opt-indicator::after {
+      display:block; width:7px; height:7px; border-radius:50%; background:#fff;
+    }
+    /* Checkbox tick */
+    .exam-opt.is-checkbox.is-selected .opt-indicator::after {
+      display:block; content:"✓"; color:#fff; font-size:.7rem; font-weight:800; line-height:1;
+    }
+
+    .opt-text { font-size:.9rem; font-weight:500; color:var(--slate-700); line-height:1.5; flex:1; }
+    .exam-opt.is-selected .opt-text { color:var(--brand-900); font-weight:600; }
+
+    /* Option letter badge */
+    .opt-letter {
+      font-size:.68rem; font-weight:700; width:20px; height:20px;
+      border-radius:5px; background:var(--slate-100); color:var(--slate-500);
+      display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;
+    }
+    .exam-opt.is-selected .opt-letter { background:var(--brand-100); color:var(--brand-600); }
+
+    /* Flag button */
+    .btn-flag {
+      display:inline-flex; align-items:center; gap:.3rem;
+      font-size:.78rem; font-weight:600; padding:.3rem .65rem;
+      border-radius:6px; border:1.5px solid var(--border); background:var(--white);
+      color:var(--slate-400); cursor:pointer; transition:all .15s ease;
+    }
+    .btn-flag:hover { border-color:#f59e0b; color:#d97706; background:#fffbeb; }
+    .btn-flag.is-flagged { border-color:#f59e0b; color:#d97706; background:#fffbeb; }
+
+    /* Loading skeleton */
+    .skeleton-block { background: linear-gradient(90deg, var(--slate-100) 25%, var(--slate-50) 50%, var(--slate-100) 75%); background-size: 200% 100%; animation: skelShimmer 1.4s ease infinite; border-radius:var(--radius); }
+    @keyframes skelShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Bottom submit strip */
+    .exam-bottom-bar {
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;
+      padding:1.25rem; margin-top:.5rem;
+      background:var(--white); border:1.5px solid var(--border); border-radius:var(--radius-lg);
+      box-shadow:var(--shadow-sm);
+    }
+    .exam-bottom-bar .progress-mini { font-size:.82rem; font-weight:600; color:var(--slate-600); }
+
+    /* Mobile topbar tweaks */
+    @media (max-width:575px) {
+      .exam-topbar { padding:0 .75rem; }
+      .exam-main-title { max-width:38vw; font-size:.82rem; }
+      .exam-save-badge #autosaveText { display:none; }
+      .exam-save-badge { padding:.28rem .5rem; }
+      .exam-timer { padding:.28rem .6rem .28rem .3rem; gap:.4rem; }
+      .exam-timer-icon { width:24px; height:24px; font-size:.8rem; }
+      .exam-timer-label { display:none; }
+      .exam-timer-value { font-size:.92rem; }
+    }
+  </style>
+</head>
+<body data-active-page="student-tests" data-require-role="" style="background:#f4f6fa;">
+<div class="shell shell--exam-mode">
+
+  <div class="main-wrapper">
+
+    <!-- Sticky Exam Topbar -->
+    <div class="exam-topbar" id="examTopbar">
+      <div class="exam-topbar-left">
+        <button type="button" class="exam-exit-btn" id="examExitBtn" title="Exit test">
+          <i class="bi bi-box-arrow-left"></i><span class="d-none d-sm-inline">Exit</span>
+        </button>
+        <div class="exam-logo-badge"><i class="bi bi-mortarboard-fill"></i></div>
+        <div>
+          <div class="exam-main-title" id="testTitle">Loading test…</div>
+          <div class="exam-attempt-info" id="attemptInfo"></div>
+        </div>
+      </div>
+      <div class="exam-topbar-right">
+        <div class="exam-save-badge" id="autosaveStatus">
+          <i class="bi bi-cloud"></i><span id="autosaveText">Ready</span>
+        </div>
+        <div class="exam-timer d-none" id="timerInline">
+          <div class="exam-timer-icon"><i class="bi bi-stopwatch-fill"></i></div>
+          <div class="exam-timer-info">
+            <span class="exam-timer-label">Time Left</span>
+            <span class="exam-timer-value" id="timerDisplay">--:--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-danger d-none mx-3 mt-3" id="alertBox" role="alert"></div>
+
+    <!-- Loading skeleton -->
+    <div id="loadingState" class="exam-layout" style="pointer-events:none;">
+      <div class="d-flex flex-column gap-3">
+        <div class="exam-q-card p-4"><div class="skeleton-block mb-3" style="height:16px;width:40%;"></div><div class="skeleton-block mb-2" style="height:22px;width:85%;"></div><div class="skeleton-block mb-4" style="height:16px;width:60%;"></div><div class="d-flex flex-column gap-2"><div class="skeleton-block" style="height:50px;"></div><div class="skeleton-block" style="height:50px;"></div><div class="skeleton-block" style="height:50px;"></div></div></div>
+        <div class="exam-q-card p-4"><div class="skeleton-block mb-3" style="height:16px;width:35%;"></div><div class="skeleton-block mb-2" style="height:22px;width:75%;"></div><div class="skeleton-block mb-4" style="height:16px;width:50%;"></div><div class="d-flex flex-column gap-2"><div class="skeleton-block" style="height:50px;"></div><div class="skeleton-block" style="height:50px;"></div></div></div>
+      </div>
+      <div class="exam-panel"><div class="exam-panel-section"><div class="skeleton-block mb-2" style="height:12px;width:50%;"></div><div class="skeleton-block" style="height:8px;"></div></div><div class="exam-panel-section"><div class="skeleton-block" style="height:80px;"></div></div></div>
+    </div>
+
+    <!-- Main exam layout (hidden until loaded) -->
+    <div class="exam-layout d-none" id="examLayout">
+
+      <!-- Questions column -->
+      <div class="exam-questions-col">
+        <form id="testForm" novalidate>
+          <div id="questionsContainer" class="d-flex flex-column gap-3"></div>
+
+          <!-- Bottom submit strip -->
+          <div class="exam-bottom-bar mt-2">
+            <div>
+              <div class="progress-mini">Ready to submit?</div>
+              <div style="font-size:.75rem;color:var(--slate-400);">
+                <span id="bottomAnsweredCount">0</span> of <span id="bottomTotalCount">0</span> questions answered
+              </div>
+            </div>
+            <button type="submit" class="btn btn-brand px-4 py-2" style="font-weight:700; border-radius:var(--radius-lg); font-size:.92rem;">
+              <i class="bi bi-check2-circle me-2"></i>Review &amp; Submit
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Sidebar column -->
+      <div class="exam-sidebar-col">
+        <div class="exam-panel">
+
+          <!-- Progress -->
+          <div class="exam-panel-section">
+            <div class="eps-label">Progress</div>
+            <div class="exam-prog-row">
+              <span>Answered</span>
+              <span id="navProgressLabel">0 / 0</span>
+            </div>
+            <div class="exam-prog-bar"><div class="exam-prog-fill" id="navProgressBar" style="width:0%"></div></div>
+            <div class="exam-stats-row mt-2">
+              <div class="exam-stat-chip">
+                <div class="chip-val chip-answered" id="statAnswered">0</div>
+                <div class="chip-lbl">Done</div>
+              </div>
+              <div class="exam-stat-chip">
+                <div class="chip-val chip-flagged" id="statFlagged">0</div>
+                <div class="chip-lbl">Flagged</div>
+              </div>
+              <div class="exam-stat-chip">
+                <div class="chip-val chip-left" id="statRemaining">0</div>
+                <div class="chip-lbl">Left</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Navigator -->
+          <div class="exam-panel-section">
+            <div class="eps-label">Question Navigator</div>
+            <div class="exam-nav-grid" id="questionNavGrid"></div>
+            <div class="nav-legend">
+              <div class="nav-legend-item"><span class="nld answered"></span>Answered</div>
+              <div class="nav-legend-item"><span class="nld unanswered"></span>Unanswered</div>
+              <div class="nav-legend-item"><span class="nld flagged"></span>Flagged</div>
+              <div class="nav-legend-item"><span class="nld active"></span>Current</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="app-footer d-none d-sm-block">
+      <div class="container-fluid">
+        <div class="row"><div class="col-12 text-center">&copy; 2026 WebTestPortal. All rights reserved.</div></div>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<!-- Submit Confirmation Modal — body-level so fixed positioning works correctly -->
+<div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content" style="border-radius:var(--radius-lg);border:none;box-shadow:0 20px 60px rgba(0,0,0,.18);">
+      <div class="modal-body pt-4 pb-2 text-center px-4">
+        <i class="bi bi-file-earmark-check-fill text-brand mb-3 d-block" style="font-size:2.4rem;"></i>
+        <h6 class="fw-bold text-dark mb-1">Submit your exam?</h6>
+        <p class="text-secondary small mb-3">You cannot change answers after submission.</p>
+        <div class="card p-3 text-start" style="background:var(--slate-50);border-radius:var(--radius);">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-secondary small fw-medium">Total Questions</span>
+            <span class="badge bg-secondary" id="confirmTotalCount">0</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-secondary small fw-medium">Answered</span>
+            <span class="badge bg-success" id="confirmAnsweredCount">0</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-secondary small fw-medium">Unanswered</span>
+            <span class="badge bg-danger" id="confirmUnansweredCount">0</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-2 pb-3 px-4 d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">Go Back</button>
+        <button type="button" class="btn btn-brand flex-fill" id="btnFinalSubmit">
+          <i class="bi bi-check2-circle me-1"></i>Submit
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Exit Exam Modal — body-level so fixed positioning works correctly -->
+<div class="modal fade" id="exitExamModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content" style="border-radius:var(--radius-lg);border:none;box-shadow:0 20px 60px rgba(0,0,0,.18);">
+      <div class="modal-body pt-4 pb-2 text-center px-4">
+        <i class="bi bi-box-arrow-left text-brand mb-3 d-block" style="font-size:2.4rem;"></i>
+        <h6 class="fw-bold text-dark mb-1">Exit this test?</h6>
+        <p class="text-secondary small mb-0">Your answers and flags are autosaved as a draft — you can resume this attempt later from where you left off.</p>
+      </div>
+      <div class="modal-footer border-0 pt-2 pb-3 px-4 d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">Stay</button>
+        <button type="button" class="btn btn-brand flex-fill" id="confirmExitExamBtn">
+          <i class="bi bi-box-arrow-left me-1"></i>Exit
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/search.js"></script>
+<script src="/js/sidebar.js"></script>
+<script src="/js/layout.js"></script>
+<script src="/js/take-test.js"></script>
+<div class="toast-container" id="toastContainer"></div>
+</body>
+</html>
