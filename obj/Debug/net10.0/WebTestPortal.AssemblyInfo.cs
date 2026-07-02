@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WebTestPortal")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+331f6ca25cbaab3201c48f99134cfeb3a72ff87c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+80830c00e4b75a980c99084021d3c6f445252f9d")]
 [assembly: System.Reflection.AssemblyProductAttribute("WebTestPortal")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WebTestPortal")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
