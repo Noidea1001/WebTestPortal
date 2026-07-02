@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard - WebTestPortal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/site.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+</head>
+<body data-active-page="student-dashboard" data-require-role="">
+  <div class="shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="/student/dashboard.html" class="sidebar-brand">
+          <span class="sidebar-brand-icon"><i class="bi bi-mortarboard-fill"></i></span>
+          <span class="sidebar-brand-text">WebTestPortal</span>
+        </a>
+        <button class="sidebar-close d-lg-none" id="sidebarClose" aria-label="Close sidebar"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="/student/dashboard.html" data-page="student-dashboard" data-role="Student" class="text-decoration-none"><i class="bi bi-speedometer2"></i> Dashboard</a>
+        <a href="/student/available-tests.html" data-page="student-tests" data-role="Student" class="text-decoration-none"><i class="bi bi-journal-check"></i> Available Tests</a>
+        <a href="/student/history.html" data-page="student-history" data-role="Student" class="text-decoration-none"><i class="bi bi-clock-history"></i> History</a>
+      </nav>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="sidebar-avatar js-user-avatar">U</div>
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-name js-user-name">&nbsp;</div>
+            <div class="sidebar-user-role js-user-role"></div>
+          </div>
+        </div>
+        <div class="sidebar-actions">
+          <a href="/profile.html" class="btn btn-ghost btn-sm w-100"><i class="bi bi-person-gear"></i> Profile</a>
+          <button type="button" class="btn btn-ghost btn-sm w-100 text-rose-500 js-logout-btn"><i class="bi bi-box-arrow-right"></i> Sign Out</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <div class="topbar">
+        <button class="topbar-toggle" id="sidebarToggle" aria-label="Toggle sidebar"><i class="bi bi-list"></i></button>
+        <span class="topbar-brand">WebTestPortal</span>
+        <div class="topbar-user">
+          <div class="sidebar-avatar js-user-avatar" style="width:32px;height:32px;font-size:0.75rem;">U</div>
+        </div>
+      </div>
+      <main class="main" id="mainContent">
+
+        <div class="fade-in-el">
+          <div class="page-header mb-4 d-flex align-items-end justify-content-between flex-wrap gap-3">
+            <div>
+              <h1 class="page-title">Student Dashboard</h1>
+              <p class="page-subtitle mb-0">Browse available tests, take exams, and view your results history.</p>
+            </div>
+            <a href="/student/available-tests.html" class="btn btn-brand"><i class="bi bi-journal-check me-1"></i>Browse Tests</a>
+          </div>
+
+          <div class="alert alert-danger d-none" id="alertBox"></div>
+
+          <div class="stats-grid">
+            <div class="stat-card card-hover accent-brand">
+              <div class="stat-icon brand"><i class="bi bi-journal-check"></i></div>
+              <div class="stat-info">
+                <div class="stat-value" id="statAvailableCount">0</div>
+                <div class="stat-label">Available Tests</div>
+              </div>
+            </div>
+            <div class="stat-card card-hover accent-emerald">
+              <div class="stat-icon emerald"><i class="bi bi-check2-all"></i></div>
+              <div class="stat-info">
+                <div class="stat-value" id="statCompletedCount">0</div>
+                <div class="stat-label">Completed</div>
+              </div>
+            </div>
+            <div class="stat-card card-hover accent-amber">
+              <div class="stat-icon amber"><i class="bi bi-clock"></i></div>
+              <div class="stat-info">
+                <div class="stat-value" id="statInProgressCount">0</div>
+                <div class="stat-label">In Progress</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-4 mt-2">
+            <div class="col-lg-6">
+              <div class="card simple-chart-card p-4 h-100">
+                <div class="dash-panel-head">
+                  <div class="dash-panel-head-left">
+                    <span class="dash-panel-icon"><i class="bi bi-bar-chart-fill"></i></span>
+                    <h5>My Score Distribution</h5>
+                  </div>
+                </div>
+                <div class="empty-state py-4 text-center d-none" id="scoreDistEmpty">
+                  <div class="empty-icon"><i class="bi bi-bar-chart"></i></div>
+                  <h5 class="empty-title small">No score data yet</h5>
+                  <p class="empty-desc small">Complete a test to see your performance here.</p>
+                </div>
+                <div class="simple-chart-shell" style="height:240px;">
+                  <canvas id="myScoreDistributionChart"></canvas>
+                </div>
+                <div class="dist-legend" id="distLegend"></div>
+                <div class="dist-insight" id="distInsight"></div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="card simple-chart-card p-4 h-100">
+                <div class="dash-panel-head">
+                  <div class="dash-panel-head-left">
+                    <span class="dash-panel-icon"><i class="bi bi-pie-chart-fill"></i></span>
+                    <h5>My Pass / Fail Ratio</h5>
+                  </div>
+                  <span class="pf-total-badge" id="pfTotalBadge">0 attempts</span>
+                </div>
+                <div class="empty-state py-4 text-center d-none" id="passFailEmpty">
+                  <div class="empty-icon"><i class="bi bi-pie-chart-fill"></i></div>
+                  <h5 class="empty-title small">No attempt data yet</h5>
+                  <p class="empty-desc small">Your pass/fail ratio appears after you complete a test.</p>
+                </div>
+                <div class="pf-panel" id="passFailPanel">
+                  <div class="pf-ring-wrap">
+                    <div class="pf-ring-canvas-wrap">
+                      <canvas id="myPassFailChart" width="160" height="160"></canvas>
+                      <div class="pf-ring-center">
+                        <div class="pf-rate-big" id="passRateLabel">0%</div>
+                        <div class="pf-rate-sub">Pass rate</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pf-breakdown">
+                    <div class="pf-row">
+                      <div class="pf-row-top">
+                        <span class="pf-dot emerald"></span>
+                        <span class="pf-row-label">Passed</span>
+                        <span class="pf-row-count" id="passCountLabel">0</span>
+                      </div>
+                      <div class="pf-bar-track"><div class="pf-bar-fill emerald" id="passBar" style="width:0%"></div></div>
+                    </div>
+                    <div class="pf-row">
+                      <div class="pf-row-top">
+                        <span class="pf-dot amber"></span>
+                        <span class="pf-row-label">Failed</span>
+                        <span class="pf-row-count" id="failCountLabel">0</span>
+                      </div>
+                      <div class="pf-bar-track"><div class="pf-bar-fill amber" id="failBar" style="width:0%"></div></div>
+                    </div>
+                    <div class="pf-divider"></div>
+                    <div class="pf-extra-stat"><span>Average Score</span><span class="val" id="pfAvgScore">—</span></div>
+                    <div class="pf-extra-stat"><span>Highest Score</span><span class="val" id="pfHighScore">—</span></div>
+                    <div class="pf-divider"></div>
+                    <div class="pf-insight" id="pfInsight"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-4 mt-2" >
+            <div class="col-12">
+              <div class="card p-4">
+                <div class="dash-panel-head">
+                  <div class="dash-panel-head-left">
+                    <span class="dash-panel-icon"><i class="bi bi-journal-check"></i></span>
+                    <h5>Available Tests</h5>
+                  </div>
+                </div>
+                <div class="empty-state d-none" id="emptyTests">
+                  <div class="empty-icon"><i class="bi bi-emoji-smile"></i></div>
+                  <h5 class="empty-title">All Caught Up!</h5>
+                  <p class="empty-desc">There are no new published tests available for you right now. Check back later!</p>
+                </div>
+                <div class="row g-3" id="testList"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-4 mt-2" id="historySection">
+            <div class="col-12">
+              <div class="card p-4">
+                <div class="dash-panel-head">
+                  <div class="dash-panel-head-left">
+                    <span class="dash-panel-icon"><i class="bi bi-clock-history"></i></span>
+                    <h5>Attempt History</h5>
+                  </div>
+                </div>
+                <div class="empty-state d-none" id="emptyResults">
+                  <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+                  <h5 class="empty-title">No attempts yet</h5>
+                  <p class="empty-desc">Take a test above to see your results here.</p>
+                </div>
+                <div class="table-responsive">
+                  <table class="table align-middle pro-table">
+                    <thead><tr><th>Test</th><th>Attempt</th><th>Status</th><th>Score</th><th>Action</th></tr></thead>
+                    <tbody id="resultRows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <span class="d-none" id="whoAmI"></span>
+        </div>
+
+      </main>
+      <footer class="app-footer d-none d-sm-block">
+        <div class="container-fluid">
+          <div class="row align-items-center justify-content-between">
+            <div class="col-12 col-md-6 text-center text-md-start mb-1 mb-md-0">&copy; 2026 WebTestPortal. All rights reserved.</div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/search.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/student.js"></script>
+  <div class="toast-container" id="toastContainer"></div>
+</body>
+</html>
